@@ -5,6 +5,8 @@ import aiohttp
 from fastapi import FastAPI, Body
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, EmailStr, Field
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import PlainTextResponse
 
 app = FastAPI(
     title="Simple API for Presentation",
@@ -83,3 +85,15 @@ async def get_reddit_data_api() -> dict:
 
     print("Got reddit data in ---" + str(time.time() - start_time) + "seconds ---")
     return data
+
+class SomeDto(BaseModel):
+    data: str = Field(min_length=1, description="Minimum length must be greater than 1",
+                      title="Minimum length must be greater than 1")
+
+@app.post(path="/customValidator", tags=["Testing Custom Validations"])
+async def get_response(request: SomeDto):
+    return "some response"
+
+@app.exception_handler(RequestValidationError)
+async def handle_error(request, exc: RequestValidationError) -> PlainTextResponse:
+    return PlainTextResponse(str(exc.errors()), status_code=400)
